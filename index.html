@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS Visualizer | xXharshulXx</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================================
+           DESIGN SYSTEM
+           ============================================================ */
+        :root {
+            --bg-deep: #0b1220;
+            --bg-panel: #111827;
+            --border: #1f2937;
+            --primary: #3b82f6;
+            --secondary: #22c55e;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+        /* ============================================================
+           3-COLUMN LAYOUT
+           ============================================================ */
+        .app {
+            display: grid;
+            grid-template-columns: 240px 1fr 320px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Left Sidebar --- */
+        .sidebar-left {
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-left nav { flex: 1; overflow-y: auto; padding: 16px 0; }
+        .nav-heading {
+            font-size: 10px; font-weight: 700; color: #475569;
+            text-transform: uppercase; letter-spacing: 1px;
+            padding: 12px 20px 4px;
+        }
+        .nav-sub {
+            font-size: 10px; font-weight: 600; color: #64748b;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding: 10px 20px 2px;
+        }
+        .nav-item {
+            padding: 7px 20px 7px 28px;
+            font-size: 13px; font-weight: 500;
+            cursor: pointer; border-left: 3px solid transparent;
+            transition: all 0.15s;
+            color: var(--text-muted);
+        }
+        .nav-item:hover { background: rgba(59,130,246,0.08); color: var(--primary); }
+        .nav-item.active {
+            background: rgba(59,130,246,0.12); color: var(--primary);
+            border-left-color: var(--primary); font-weight: 600;
+        }
+
+        /* --- Center Stage --- */
+        .stage {
+            display: flex; flex-direction: column;
+            background: var(--bg-deep);
+            overflow: hidden;
+            min-width: 0;
+        }
+        .stage-header {
+            flex-shrink: 0;
+            padding: 16px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
+        }
+        .stage-body {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            position: relative;
+        }
+        .stage-controls {
+            flex-shrink: 0;
+            padding: 12px 24px;
+            display: flex; justify-content: center; align-items: center; gap: 16px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-panel);
+        }
+
+        /* --- Right Sidebar --- */
+        .sidebar-right {
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-right-scroll {
+            flex: 1; overflow-y: auto; padding: 20px;
+        }
+        .section-title {
+            font-size: 10px; font-weight: 700; color: #475569;
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        /* ============================================================
+           COMPONENTS
+           ============================================================ */
+        .panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .btn {
+            padding: 7px 14px; border-radius: 6px; font-weight: 500;
+            font-size: 12px; cursor: pointer; border: none; outline: none;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: all 0.15s; font-family: inherit;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: var(--border); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { filter: brightness(1.1); }
+        .btn-accent { background: var(--accent); color: #000; font-weight: 600; }
+        .btn-accent:hover { filter: brightness(1.1); }
+        .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+        /* Stats grid */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+        .stat-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 6px; padding: 10px;
+        }
+        .stat-label { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 18px; font-weight: 700; color: #fff; font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+        /* Current step indicator */
+        .step-indicator {
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.3);
+            border-radius: 6px; padding: 10px 12px;
+            margin-bottom: 20px;
+            font-size: 12px; color: var(--primary);
+            min-height: 36px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .step-indicator .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--primary); flex-shrink: 0;
+            animation: pulse-dot 1.5s ease infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Code block */
+        .code-block {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 6px; padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; color: #93c5fd;
+            overflow-x: auto; white-space: pre;
+            line-height: 1.6;
+        }
+
+        /* ============================================================
+           VISUALIZATION: Sorting Bars
+           ============================================================ */
+        .bar {
+            width: 28px;
+            background: var(--primary);
+            border-radius: 3px 3px 0 0;
+            position: relative;
+            transition: height 0.25s ease, background-color 0.25s;
+        }
+        .bar.comparing { background: var(--accent); }
+        .bar.swapping { background: var(--secondary); }
+        .bar.sorted { background: var(--secondary); }
+        .bar-label {
+            position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+            font-size: 9px; font-weight: 700; color: #475569;
+        }
+
+        /* ============================================================
+           VISUALIZATION: Search Elements
+           ============================================================ */
+        .search-box {
+            width: 52px; height: 52px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px;
+            background: #1e293b;
+            transition: all 0.3s;
+        }
+
+        /* ============================================================
+           VISUALIZATION: Stack
+           ============================================================ */
+        .stack-container {
+            display: flex; flex-direction: column-reverse;
+            align-items: center; gap: 4px;
+            min-height: 200px;
+            position: relative;
+        }
+        .stack-item {
+            width: 180px; height: 44px;
+            border: 2px solid var(--primary);
+            background: rgba(59,130,246,0.12);
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 15px;
+            position: relative;
+        }
+        .stack-item.top-item {
+            border-color: var(--accent);
+            background: rgba(245,158,11,0.12);
+        }
+        .stack-item.top-item::after {
+            content: '← TOP';
+            position: absolute; right: -56px;
+            font-size: 10px; font-weight: 700; color: var(--accent);
+            letter-spacing: 1px;
+        }
+
+        /* Stack animations */
+        @keyframes stackPush {
+            from { opacity: 0; transform: translateY(-30px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes stackPopHighlight {
+            0% { border-color: var(--primary); background: rgba(59,130,246,0.12); }
+            50% { border-color: var(--danger); background: rgba(239,68,68,0.2); }
+            100% { border-color: var(--accent); background: rgba(245,158,11,0.25); }
+        }
+        @keyframes stackPopSlide {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-50px); }
+        }
+        .stack-push-anim { animation: stackPush 0.35s ease-out; }
+        .stack-pop-highlight { animation: stackPopHighlight 0.4s ease; }
+        .stack-pop-slide { animation: stackPopSlide 0.35s ease-in forwards; }
+
+        /* ============================================================
+           VISUALIZATION: Queue
+           ============================================================ */
+        .queue-wrapper {
+            display: flex; align-items: center; gap: 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .queue-label {
+            font-size: 10px; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1px;
+            white-space: nowrap; flex-shrink: 0;
+            padding: 0 8px;
+        }
+        .queue-container {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px;
+        }
+        .queue-item {
+            width: 60px; height: 56px;
+            border: 2px solid var(--secondary);
+            background: rgba(34,197,94,0.1);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px;
+            transition: all 0.35s ease;
+            flex-shrink: 0;
+        }
+        .queue-item.front-item {
+            border-color: var(--accent);
+            background: rgba(245,158,11,0.12);
+        }
+        .queue-item.rear-item {
+            border-color: var(--primary);
+            background: rgba(59,130,246,0.12);
+        }
+
+        /* Queue animations */
+        @keyframes queueEnq {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes queueDeqHighlight {
+            0% { border-color: var(--secondary); }
+            50% { border-color: var(--danger); background: rgba(239,68,68,0.2); }
+            100% { border-color: var(--accent); background: rgba(245,158,11,0.25); }
+        }
+        @keyframes queueDeqSlide {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(-70px); }
+        }
+        @keyframes queueShift {
+            from { transform: translateX(66px); }
+            to { transform: translateX(0); }
+        }
+        .queue-enq-anim { animation: queueEnq 0.35s ease-out; }
+        .queue-deq-highlight { animation: queueDeqHighlight 0.4s ease; }
+        .queue-deq-slide { animation: queueDeqSlide 0.3s ease-in forwards; }
+        .queue-shift-anim { animation: queueShift 0.35s ease-out; }
+
+        /* ============================================================
+           VISUALIZATION: RLE
+           ============================================================ */
+        .rle-block {
+            width: 44px; height: 44px;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 15px;
+            border: 2px solid transparent;
+            transition: all 0.25s;
+            flex-shrink: 0;
+        }
+        .rle-block.active {
+            border-color: var(--accent);
+            transform: scale(1.08);
+            box-shadow: 0 0 10px rgba(245,158,11,0.3);
+        }
+        .rle-group {
+            display: flex; gap: 2px;
+            border: 2px solid var(--secondary);
+            border-radius: 8px; padding: 3px;
+            transition: all 0.3s;
+        }
+        .rle-input {
+            background: #0f172a; border: 1px solid var(--border);
+            border-radius: 6px; padding: 8px 12px;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px; outline: none; width: 100%;
+        }
+        .rle-input:focus { border-color: var(--primary); }
+
+        /* ============================================================
+           VISUALIZATION: Memory
+           ============================================================ */
+        .mem-bar {
+            width: 100%; height: 60px;
+            display: flex; border-radius: 8px; overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .mem-seg {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700;
+            border-right: 1px solid rgba(0,0,0,0.3);
+            transition: all 0.4s ease;
+            position: relative; overflow: hidden;
+        }
+        .mem-seg.allocated { background: var(--primary); color: #fff; }
+        .mem-seg.free { background: #1e293b; color: #475569; }
+        .mem-seg.free-frag {
+            background: repeating-linear-gradient(
+                45deg, #1e293b, #1e293b 4px, #293548 4px, #293548 8px
+            );
+            color: var(--accent);
+            border-top: 2px dashed var(--accent);
+            border-bottom: 2px dashed var(--accent);
+        }
+        .mem-seg.int-frag {
+            background: var(--primary); color: #fff;
+        }
+        .mem-seg.int-frag::after {
+            content: 'wasted';
+            position: absolute; right: 3px; top: 2px;
+            font-size: 7px; color: var(--accent); font-weight: 600;
+        }
+        .mem-seg .seg-label { font-size: 9px; opacity: 0.7; margin-top: 2px; }
+
+        /* Memory animations */
+        @keyframes memAlloc {
+            0% { background: var(--secondary); transform: scaleY(1.05); }
+            100% { background: var(--primary); transform: scaleY(1); }
+        }
+        @keyframes memDealloc {
+            0% { background: var(--danger); }
+            40% { background: var(--accent); }
+            100% { background: #1e293b; }
+        }
+        @keyframes memDefragSlide {
+            from { opacity: 0; transform: translateX(-15px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .mem-alloc-anim { animation: memAlloc 0.5s ease; }
+        .mem-dealloc-anim { animation: memDealloc 0.6s ease; }
+        .mem-defrag-anim {
+            opacity: 0;
+            animation: memDefragSlide 0.4s ease-out forwards;
+        }
+
+        /* Memory address labels */
+        .mem-addresses {
+            display: flex; width: 100%; margin-top: 4px;
+        }
+        .mem-addr {
+            font-size: 8px; color: #475569;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: left; font-weight: 600;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 1100px) {
+            .app {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr auto;
+                height: auto; min-height: 100vh;
+            }
+            .sidebar-left {
+                border-right: none; border-bottom: 1px solid var(--border);
+                max-height: 200px;
+            }
+            .sidebar-left nav { display: flex; flex-wrap: wrap; gap: 2px; padding: 8px; }
+            .nav-heading, .nav-sub { width: 100%; }
+            .nav-item { padding: 5px 12px; border-left: none; border-radius: 4px; }
+            .sidebar-right {
+                border-left: none; border-top: 1px solid var(--border);
+                max-height: 400px;
+            }
+            .stage-body { min-height: 350px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <!-- ============================================================
+         LEFT PANEL: Navigation
+         ============================================================ -->
+    <aside class="sidebar-left">
+        <div style="padding:16px 20px; border-bottom:1px solid var(--border);">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <svg style="width:20px;height:20px;color:#3b82f6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 21h6l-.75-4M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <span style="font-size:16px; font-weight:700; color:#fff;">CS Cambridge</span>
+            </div>
+            <div style="font-size:9px; color:#475569; margin-top:4px; text-transform:uppercase; letter-spacing:1.5px; font-weight:600;">GITHUB: xXharshulXx</div>
+        </div>
+        <nav>
+            <div class="nav-heading">IGCSE (0478)</div>
+            <div class="nav-sub">Sorting</div>
+            <div class="nav-item" onclick="loadTopic('bubble-sort')">Bubble Sort</div>
+            <div class="nav-item" onclick="loadTopic('insertion-sort')">Insertion Sort</div>
+            <div class="nav-item" onclick="loadTopic('selection-sort')">Selection Sort</div>
+            <div class="nav-sub">Searching</div>
+            <div class="nav-item" onclick="loadTopic('linear-search')">Linear Search</div>
+            <div class="nav-item" onclick="loadTopic('binary-search')">Binary Search</div>
+
+            <div class="nav-heading">AS &amp; A Level (9618)</div>
+            <div class="nav-sub">Data Structures</div>
+            <div class="nav-item" onclick="loadTopic('stack')">Stack (LIFO)</div>
+            <div class="nav-item" onclick="loadTopic('queue')">Queue (FIFO)</div>
+            <div class="nav-sub">Data Representation</div>
+            <div class="nav-item" onclick="loadTopic('rle')">Run-Length Encoding</div>
+            <div class="nav-item" onclick="loadTopic('memory-fragmentation')">Memory Fragmentation</div>
+        </nav>
+        <div style="padding:10px; border-top:1px solid var(--border); text-align:center; font-size:9px; color:#475569;">
+            Cambridge 0478 / 9618
+        </div>
+    </aside>
+
+    <!-- ============================================================
+         CENTER PANEL: Visualizer
+         ============================================================ -->
+    <main class="stage">
+        <!-- Header -->
+        <div class="stage-header">
+            <div style="min-width:0;">
+                <div id="topic-title" style="font-size:18px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Select a Topic</div>
+                <div id="topic-subtitle" style="font-size:12px; color:var(--text-muted); margin-top:2px;">Choose an algorithm from the sidebar</div>
+            </div>
+            <button id="btn-randomize" class="btn btn-outline" onclick="generateRandomData()">
+                <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Randomize
+            </button>
+        </div>
+
+        <!-- Visual Area -->
+        <div class="stage-body" id="stage-body">
+            <div id="visual-area" style="width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; gap:2px; position:relative;">
+                <div style="color:#334155; text-align:center;">
+                    <svg style="width:48px;height:48px;margin:0 auto 12px;opacity:0.3;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9.75 17L9 21h6l-.75-4M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    <p style="font-size:14px; opacity:0.4;">Select a topic to begin</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="stage-controls">
+            <button id="btn-play" class="btn btn-primary" onclick="togglePlay()">
+                <svg style="width:14px;height:14px;" fill="currentColor" viewBox="0 0 20 20"><path d="M4.5 3.5l11 6.5-11 6.5z"></path></svg>
+                Play
+            </button>
+            <button class="btn btn-outline" onclick="stepForward()">
+                <svg style="width:14px;height:14px;" fill="currentColor" viewBox="0 0 20 20"><path d="M6.5 3.5v13h3v-13h-3zm8 0l-6 6.5 6 6.5v-13z" transform="rotate(180 10 10)"></path></svg>
+                Step
+            </button>
+            <button class="btn btn-outline" onclick="resetVisualizer()">Reset</button>
+            <div style="width:1px; height:24px; background:var(--border); margin:0 4px;"></div>
+            <span style="font-size:10px; font-weight:600; color:#475569; text-transform:uppercase;">Speed</span>
+            <input type="range" id="speed-range" min="1" max="100" value="50" style="width:100px; accent-color:#3b82f6;">
+        </div>
+    </main>
+
+    <!-- ============================================================
+         RIGHT PANEL: Info & Metrics
+         ============================================================ -->
+    <aside class="sidebar-right">
+        <div class="sidebar-right-scroll">
+            <!-- Stats -->
+            <div class="section-title">Algorithm Stats</div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label" id="sl0">Steps</div>
+                    <div class="stat-value" id="sv0">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label" id="sl1">Comparisons</div>
+                    <div class="stat-value" id="sv1">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label" id="sl2">Swaps</div>
+                    <div class="stat-value" id="sv2">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label" id="sl3">Complexity</div>
+                    <div class="stat-value" id="sv3" style="font-size:13px; color:#60a5fa;">O(n²)</div>
+                </div>
+            </div>
+
+            <!-- Current Step -->
+            <div class="section-title">Current Step</div>
+            <div class="step-indicator" id="step-indicator">
+                <div class="dot"></div>
+                <span id="step-text">Waiting to start...</span>
+            </div>
+
+            <!-- Explanation -->
+            <div class="section-title">Explanation</div>
+            <div id="explanation-box" style="font-size:12px; color:var(--text-muted); line-height:1.7; margin-bottom:20px;">
+                <p>Select an algorithm to view its explanation.</p>
+            </div>
+
+            <!-- Code -->
+            <div class="section-title">Key Logic</div>
+            <div class="code-block" id="code-snippet">// Select a topic</div>
+        </div>
+    </aside>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT ENGINE
+     ============================================================ -->
+<script>
+// ====================================================================
+// STATE
+// ====================================================================
+let currentTopic = null;
+let data = [];
+let isRunning = false;
+let generator = null;
+let speed = 50;
+let stats = [0, 0, 0, 0];
+let currentTopicTarget = null;
+
+// Memory state
+let memBlocks = [];
+let memTotal = 20;
+let memProcessCounter = 0;
+
+// RLE state
+let rleInput = '';
+let rleColors = {};
+
+// DOM
+const VA = document.getElementById('visual-area');
+const stageBody = document.getElementById('stage-body');
+const elTitle = document.getElementById('topic-title');
+const elSubtitle = document.getElementById('topic-subtitle');
+const elExplanation = document.getElementById('explanation-box');
+const elCode = document.getElementById('code-snippet');
+const elStepText = document.getElementById('step-text');
+const speedRange = document.getElementById('speed-range');
+const btnPlay = document.getElementById('btn-play');
+const btnRandomize = document.getElementById('btn-randomize');
+
+// ====================================================================
+// TOPIC METADATA
+// ====================================================================
+const TOPICS = {
+    'bubble-sort': {
+        title: 'Bubble Sort', subtitle: 'Repeatedly swap adjacent elements',
+        complexity: 'O(n²)', stats: ['Steps', 'Comparisons', 'Swaps', 'Complexity'],
+        explanation: `<p><strong>Bubble Sort</strong> steps through the list, compares adjacent elements, and swaps them if in wrong order.</p>
+            <p style="margin-top:8px;"><strong>Mechanism:</strong> Each pass "bubbles" the largest unsorted element to the end.</p>
+            <p style="margin-top:8px;"><strong>Use:</strong> Educational; understanding basic sorting.</p>
+            <ul style="margin:8px 0 0 16px; list-style:disc; line-height:1.8;">
+                <li>✅ Easy to implement, stable sort</li>
+                <li>❌ O(n²) — inefficient for large data</li>
+            </ul>`,
+        code: `FOR i ← 0 TO n - 2\n  FOR j ← 0 TO n - i - 2\n    IF arr[j] > arr[j+1]\n      SWAP(arr[j], arr[j+1])\n    ENDIF\n  NEXT j\nNEXT i`
+    },
+    'insertion-sort': {
+        title: 'Insertion Sort', subtitle: 'Insert each element into its correct position',
+        complexity: 'O(n²)', stats: ['Steps', 'Comparisons', 'Swaps', 'Complexity'],
+        explanation: `<p><strong>Insertion Sort</strong> builds the sorted array one element at a time.</p>
+            <p style="margin-top:8px;"><strong>Mechanism:</strong> Takes one element and scans backward to find where it belongs.</p>
+            <p style="margin-top:8px;"><strong>Use:</strong> Small datasets; subroutine in Timsort.</p>
+            <ul style="margin:8px 0 0 16px; list-style:disc; line-height:1.8;">
+                <li>✅ Efficient for small/nearly-sorted data</li>
+                <li>❌ O(n²) worst case</li>
+            </ul>`,
+        code: `FOR i ← 1 TO n - 1\n  key ← arr[i]\n  j ← i - 1\n  WHILE j >= 0 AND arr[j] > key\n    arr[j+1] ← arr[j]\n    j ← j - 1\n  ENDWHILE\n  arr[j+1] ← key\nNEXT i`
+    },
+    'selection-sort': {
+        title: 'Selection Sort', subtitle: 'Find the minimum each pass',
+        complexity: 'O(n²)', stats: ['Steps', 'Comparisons', 'Swaps', 'Complexity'],
+        explanation: `<p><strong>Selection Sort</strong> divides the list into sorted and unsorted parts, repeatedly selecting the minimum.</p>
+            <p style="margin-top:8px;"><strong>Mechanism:</strong> Finds the minimum from unsorted portion, swaps it into position.</p>
+            <ul style="margin:8px 0 0 16px; list-style:disc; line-height:1.8;">
+                <li>✅ Minimises swaps (at most n-1)</li>
+                <li>❌ Always O(n²) — no early exit</li>
+            </ul>`,
+        code: `FOR i ← 0 TO n - 2\n  min_idx ← i\n  FOR j ← i+1 TO n - 1\n    IF arr[j] < arr[min_idx]\n      min_idx ← j\n    ENDIF\n  NEXT j\n  SWAP(arr[i], arr[min_idx])\nNEXT i`
+    },
+    'linear-search': {
+        title: 'Linear Search', subtitle: 'Check elements one by one',
+        complexity: 'O(n)', stats: ['Steps', 'Comparisons', '—', 'Complexity'],
+        explanation: `<p><strong>Linear Search</strong> examines each element sequentially until the target is found.</p>
+            <p style="margin-top:8px;"><strong>Use:</strong> Unsorted or small datasets.</p>
+            <ul style="margin:8px 0 0 16px; list-style:disc; line-height:1.8;">
+                <li>✅ Works on unsorted data</li>
+                <li>❌ O(n) — slow for large datasets</li>
+            </ul>`,
+        code: `FUNCTION linearSearch(arr, x)\n  FOR i ← 0 TO n - 1\n    IF arr[i] = x\n      RETURN i\n    ENDIF\n  NEXT i\n  RETURN -1\nENDFUNCTION`
+    },
+    'binary-search': {
+        title: 'Binary Search', subtitle: 'Divide and conquer (sorted array only)',
+        complexity: 'O(log n)', stats: ['Steps', 'Comparisons', '—', 'Complexity'],
+        explanation: `<p><strong>Binary Search</strong> halves the search interval each step.</p>
+            <p style="margin-top:8px;"><strong>Prerequisite:</strong> Data must be sorted.</p>
+            <ul style="margin:8px 0 0 16px; list-style:disc; line-height:1.8;">
+                <li>✅ O(log n) — extremely fast</li>
+                <li>❌ Requires sorted data</li>
+            </ul>`,
+        code: `low ← 0\nhigh ← n - 1\nWHILE low <= high\n  mid ← (low + high) DIV 2\n  IF arr[mid] = target\n    RETURN mid\n  ELSEIF arr[mid] < target\n    low ← mid + 1\n  ELSE high ← mid - 1\n  ENDIF\nENDWHILE\nRETURN -1`
+    },
+    'stack': {
+        title: 'Stack (LIFO)', subtitle: 'Last-In, First-Out data structure',
+        complexity: 'O(1)', stats: ['Operations', 'Stack Size', 'Top Element', 'Complexity'],
+        explanation: `<p>A <strong>Stack</strong> follows LIFO — the last element added is the first removed.</p>
+            <p style="margin-top:8px;"><strong>Push:</strong> Adds to top. <strong>Pop:</strong> Removes from top.</p>
+            <p style="margin-top:8px;"><strong>Use:</strong> Undo mechanisms, call stacks, expression parsing.</p>
+            <ul style="margin:8px 0 0 16px; list-style:disc; line-height:1.8;">
+                <li>✅ O(1) push/pop</li>
+                <li>❌ Only top element accessible</li>
+            </ul>`,
+        code: `PUSH(item):\n  top ← top + 1\n  stack[top] ← item\n\nPOP():\n  IF top = -1\n    ERROR "Underflow"\n  ENDIF\n  item ← stack[top]\n  top ← top - 1\n  RETURN item`
+    },
+    'queue': {
+        title: 'Queue (FIFO)', subtitle: 'First-In, First-Out data structure',
+        complexity: 'O(1)', stats: ['Operations', 'Queue Size', 'Front Element', 'Complexity'],
+        explanation: `<p>A <strong>Queue</strong> follows FIFO — the first element added is the first removed.</p>
+            <p style="margin-top:8px;"><strong>Enqueue:</strong> Adds to rear. <strong>Dequeue:</strong> Removes from front.</p>
+            <p style="margin-top:8px;"><strong>Use:</strong> Print queues, task scheduling, BFS.</p>
+            <ul style="margin:8px 0 0 16px; list-style:disc; line-height:1.8;">
+                <li>✅ O(1) enqueue/dequeue</li>
+                <li>❌ Only front and rear accessible</li>
+            </ul>`,
+        code: `ENQUEUE(item):\n  rear ← rear + 1\n  queue[rear] ← item\n\nDEQUEUE():\n  IF front > rear\n    ERROR "Empty"\n  ENDIF\n  item ← queue[front]\n  front ← front + 1\n  RETURN item`
+    },
+    'rle': {
+        title: 'Run-Length Encoding', subtitle: 'Lossless data compression',
+        complexity: 'O(n)', stats: ['Groups Found', 'Compression %', 'Original', 'Encoded'],
+        explanation: `<p><strong>RLE</strong> replaces repeated characters with a count + single character.</p>
+            <p style="margin-top:8px;"><strong>Example:</strong> AAAABBBCC → 4A3B2C</p>
+            <p style="margin-top:8px;"><strong>Use:</strong> Image compression (BMP, TIFF), fax transmission.</p>
+            <ul style="margin:8px 0 0 16px; list-style:disc; line-height:1.8;">
+                <li>✅ Simple and fast</li>
+                <li>❌ Ineffective for varied data</li>
+            </ul>`,
+        code: `FUNCTION RLE_Encode(text)\n  result ← ""\n  i ← 0\n  WHILE i < LENGTH(text)\n    count ← 1\n    WHILE text[i] = text[i+count]\n      count ← count + 1\n    ENDWHILE\n    result ← result & count & text[i]\n    i ← i + count\n  ENDWHILE\n  RETURN result\nENDFUNCTION`
+    },
+    'memory-fragmentation': {
+        title: 'Memory Fragmentation', subtitle: 'Allocation, deallocation & defragmentation',
+        complexity: 'Variable', stats: ['Fragmentation %', 'Free Blocks', 'Largest Free', 'Total Segments'],
+        explanation: `<p><strong>Memory Fragmentation</strong> occurs when allocation/deallocation creates unusable gaps.</p>
+            <p style="margin-top:8px;"><strong>External:</strong> Free space scattered between allocated blocks.</p>
+            <p style="margin-top:8px;"><strong>Internal:</strong> Wasted space inside allocated blocks.</p>
+            <p style="margin-top:8px;"><strong>Defragmentation</strong> compacts allocated blocks, merging free space.</p>
+            <ul style="margin:8px 0 0 16px; list-style:disc; line-height:1.8;">
+                <li>⚠️ Cannot be eliminated — only managed</li>
+            </ul>`,
+        code: `ALLOCATE(size):\n  FIND first free block >= size\n  MARK as allocated\n\nDEALLOCATE(block):\n  MARK block as free\n  MERGE adjacent free blocks\n\nDEFRAGMENT():\n  SHIFT all allocated left\n  MERGE all free space at end`
+    }
+};
+
+// ====================================================================
+// CORE ENGINE
+// ====================================================================
+
+function loadTopic(id) {
+    stopAnimation();
+    currentTopic = id;
+    const t = TOPICS[id];
+    elTitle.innerText = t.title;
+    elSubtitle.innerText = t.subtitle;
+    elExplanation.innerHTML = t.explanation;
+    elCode.innerText = t.code;
+
+    // Update stat labels
+    t.stats.forEach((l, i) => document.getElementById('sl' + i).innerText = l);
+    resetStats();
+
+    // Active nav
+    document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.toggle('active', el.getAttribute('onclick')?.includes(`'${id}'`));
+    });
+
+    initVisuals(id);
+}
+
+function resetStats() {
+    stats = [0, 0, 0, 0];
+    for (let i = 0; i < 4; i++) {
+        document.getElementById('sv' + i).innerText = i === 3 ? (TOPICS[currentTopic]?.complexity || '—') : '0';
+    }
+}
+
+function setStat(i, v) {
+    stats[i] = v;
+    const el = document.getElementById('sv' + i);
+    el.innerText = typeof v === 'number' ? v.toLocaleString() : v;
+}
+
+function setStep(text) {
+    document.getElementById('step-text').innerText = text;
+}
+
+// ====================================================================
+// TOPIC INITIALIZATION
+// ====================================================================
+
+function initVisuals(id) {
+    VA.innerHTML = '';
+    VA.className = '';
+    VA.style.cssText = 'width:100%;height:100%;position:relative;';
+    btnRandomize.style.display = '';
+    setStep('Waiting to start...');
+
+    if (id.includes('sort')) {
+        VA.style.display = 'flex'; VA.style.alignItems = 'flex-end'; VA.style.justifyContent = 'center'; VA.style.gap = '2px';
+        data = randArr(20);
+        renderBars();
+    } else if (id.includes('search')) {
+        VA.style.display = 'flex'; VA.style.alignItems = 'center'; VA.style.justifyContent = 'center';
+        VA.style.gap = '6px'; VA.style.flexWrap = 'wrap';
+        data = randArr(15, true);
+        renderSearch();
+    } else if (id === 'stack') {
+        data = [];
+        initStack();
+    } else if (id === 'queue') {
+        data = [];
+        initQueue();
+    } else if (id === 'rle') {
+        initRLE();
+    } else if (id === 'memory-fragmentation') {
+        initMemory();
+    }
+    prepareGen();
+}
+
+function randArr(n, sorted = false) {
+    const a = Array.from({length: n}, () => Math.floor(Math.random() * 80) + 10);
+    if (sorted) a.sort((x, y) => x - y);
+    return a;
+}
+
+function generateRandomData() {
+    if (!currentTopic) return;
+    stopAnimation(); resetStats();
+    initVisuals(currentTopic);
+}
+
+// ====================================================================
+// RENDERING: Sorting
+// ====================================================================
+
+function renderBars() {
+    VA.innerHTML = '';
+    data.forEach((v, i) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.height = (v * 2.8) + 'px';
+        bar.id = 'bar-' + i;
+        const lbl = document.createElement('span');
+        lbl.className = 'bar-label';
+        lbl.innerText = v;
+        bar.appendChild(lbl);
+        VA.appendChild(bar);
+    });
+}
+
+// ====================================================================
+// RENDERING: Search
+// ====================================================================
+
+function renderSearch() {
+    VA.innerHTML = '';
+    data.forEach((v, i) => {
+        const box = document.createElement('div');
+        box.className = 'search-box';
+        box.id = 'box-' + i;
+        box.innerText = v;
+        VA.appendChild(box);
+    });
+    currentTopicTarget = data[Math.floor(Math.random() * data.length)];
+    elSubtitle.innerText = `Target: ${currentTopicTarget}`;
+}
+
+// ====================================================================
+// RENDERING: Stack (with persistent DOM)
+// ====================================================================
+
+let stackContainer = null;
+let stackTopLabel = null;
+
+function initStack() {
+    VA.style.display = 'flex'; VA.style.flexDirection = 'column';
+    VA.style.alignItems = 'center'; VA.style.justifyContent = 'flex-end';
+    VA.style.paddingBottom = '40px';
+
+    VA.innerHTML = '';
+    // Base
+    const base = document.createElement('div');
+    base.style.cssText = 'width:200px; height:6px; background:var(--border); border-radius:0 0 6px 6px; flex-shrink:0;';
+    VA.appendChild(base);
+
+    stackContainer = document.createElement('div');
+    stackContainer.className = 'stack-container';
+    stackContainer.id = 'stack-container';
+    VA.appendChild(stackContainer);
+
+    stackTopLabel = document.createElement('div');
+    stackTopLabel.id = 'stack-top-label';
+    stackTopLabel.style.cssText = 'font-size:11px; color:var(--text-muted); font-weight:600; margin-top:8px;';
+    stackTopLabel.innerText = 'Stack is empty';
+    VA.appendChild(stackTopLabel);
+
+    // Reverse order so top is visually at top
+    VA.style.flexDirection = 'column-reverse';
+    updateStackLabels();
+}
+
+function updateStackLabels() {
+    const items = stackContainer.querySelectorAll('.stack-item');
+    items.forEach((el, i) => {
+        el.classList.toggle('top-item', i === items.length - 1);
+    });
+    const lbl = document.getElementById('stack-top-label');
+    if (lbl) lbl.innerText = data.length === 0 ? 'Stack is empty' : `Stack size: ${data.length} | Top: ${data[data.length - 1]}`;
+}
+
+// ====================================================================
+// RENDERING: Queue (with persistent DOM)
+// ====================================================================
+
+let queueContainer = null;
+
+function initQueue() {
+    VA.style.display = 'flex'; VA.style.flexDirection = 'column';
+    VA.style.alignItems = 'center'; VA.style.justifyContent = 'center';
+    VA.style.gap = '12px';
+
+    VA.innerHTML = '';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'queue-wrapper';
+
+    const lblFront = document.createElement('div');
+    lblFront.className = 'queue-label';
+    lblFront.innerText = 'FRONT ←';
+    wrapper.appendChild(lblFront);
+
+    queueContainer = document.createElement('div');
+    queueContainer.className = 'queue-container';
+    queueContainer.id = 'queue-container';
+    wrapper.appendChild(queueContainer);
+
+    const lblRear = document.createElement('div');
+    lblRear.className = 'queue-label';
+    lblRear.innerText = '→ REAR';
+    wrapper.appendChild(lblRear);
+
+    VA.appendChild(wrapper);
+
+    const sizeLabel = document.createElement('div');
+    sizeLabel.id = 'queue-size-label';
+    sizeLabel.style.cssText = 'font-size:11px; color:var(--text-muted); font-weight:600;';
+    sizeLabel.innerText = 'Queue is empty';
+    VA.appendChild(sizeLabel);
+
+    updateQueueLabels();
+}
+
+function updateQueueLabels() {
+    const items = queueContainer.querySelectorAll('.queue-item');
+    items.forEach((el, i) => {
+        el.classList.remove('front-item', 'rear-item');
+        if (i === 0 && items.length > 0) el.classList.add('front-item');
+        if (i === items.length - 1 && items.length > 1) el.classList.add('rear-item');
+    });
+    const lbl = document.getElementById('queue-size-label');
+    if (lbl) lbl.innerText = data.length === 0 ? 'Queue is empty' : `Size: ${data.length} | Front: ${data[0]} | Rear: ${data[data.length - 1]}`;
+}
+
+// ====================================================================
+// RENDERING: RLE
+// ====================================================================
+
+function initRLE() {
+    VA.style.display = 'flex'; VA.style.flexDirection = 'column';
+    VA.style.alignItems = 'center'; VA.style.justifyContent = 'center';
+    VA.style.gap = '16px'; VA.style.overflowY = 'auto';
+
+    rleInput = 'AAABBBCCDDDDEEFFFGG';
+    rleColors = {};
+    renderRLE();
+}
+
+function getRLEColor(ch) {
+    if (!rleColors[ch]) rleColors[ch] = `hsl(${(ch.charCodeAt(0) * 47) % 360}, 55%, 40%)`;
+    return rleColors[ch];
+}
+
+function renderRLE(groups = null, activeGroup = -1, encoded = null) {
+    VA.innerHTML = '';
+
+    // Title
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:10px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:1px; width:100%; text-align:left;';
+    title.innerText = 'Input Data';
+    VA.appendChild(title);
+
+    // Blocks
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; gap:3px; flex-wrap:wrap; justify-content:center;';
+
+    if (groups) {
+        // Show grouped blocks
+        groups.forEach((g, gi) => {
+            const gDiv = document.createElement('div');
+            gDiv.className = 'rle-group';
+            if (gi === activeGroup) {
+                gDiv.style.borderColor = 'var(--accent)';
+                gDiv.style.boxShadow = '0 0 12px rgba(245,158,11,0.3)';
+            } else if (gi < activeGroup || activeGroup === -1) {
+                gDiv.style.borderColor = 'var(--secondary)';
+                gDiv.style.opacity = activeGroup >= 0 && gi > activeGroup ? '0.5' : '1';
+            }
+            for (let k = 0; k < g.count; k++) {
+                const block = document.createElement('div');
+                block.className = 'rle-block';
+                block.style.background = getRLEColor(g.char);
+                block.innerText = g.char;
+                gDiv.appendChild(block);
+            }
+            // Group label
+            const label = document.createElement('div');
+            label.style.cssText = 'position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700; color:var(--secondary); white-space:nowrap;';
+            label.className = 'mono';
+            label.innerText = `${g.count}${g.char}`;
+            gDiv.style.position = 'relative';
+            gDiv.style.marginBottom = '22px';
+            gDiv.appendChild(label);
+            row.appendChild(gDiv);
+        });
+    } else {
+        // Show plain blocks
+        for (let i = 0; i < rleInput.length; i++) {
+            const block = document.createElement('div');
+            block.className = 'rle-block';
+            block.style.background = getRLEColor(rleInput[i]);
+            block.innerText = rleInput[i];
+            row.appendChild(block);
+        }
+    }
+    VA.appendChild(row);
+
+    // Encoded result
+    if (encoded) {
+        const resTitle = document.createElement('div');
+        resTitle.style.cssText = 'font-size:10px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:1px; width:100%; text-align:left; margin-top:8px;';
+        resTitle.innerText = 'Encoded Result';
+        VA.appendChild(resTitle);
+
+        const resBox = document.createElement('div');
+        resBox.style.cssText = 'background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:6px; padding:12px; font-family:JetBrains Mono,monospace; font-size:16px; color:#4ade80; text-align:center; width:100%;';
+        resBox.innerText = encoded;
+        VA.appendChild(resBox);
+
+        const info = document.createElement('div');
+        info.style.cssText = 'display:flex; gap:16px; font-size:11px; color:var(--text-muted);';
+        const orig = document.createElement('span');
+        orig.innerText = `Original: ${rleInput.length} chars`;
+        info.appendChild(orig);
+        const enc = document.createElement('span');
+        enc.style.color = '#4ade80'; enc.style.fontWeight = '600';
+        enc.innerText = `Encoded: ${encoded.length} chars`;
+        info.appendChild(enc);
+        const pct = ((1 - encoded.length / rleInput.length) * 100).toFixed(1);
+        const rat = document.createElement('span');
+        rat.style.color = parseFloat(pct) > 0 ? '#4ade80' : '#ef4444'; rat.style.fontWeight = '600';
+        rat.innerText = `${pct}% ${parseFloat(pct) > 0 ? 'saved' : 'larger'}`;
+        info.appendChild(rat);
+        VA.appendChild(info);
+    }
+
+    // Custom input
+    const inputRow = document.createElement('div');
+    inputRow.style.cssText = 'display:flex; gap:8px; width:100%; margin-top:8px;';
+    const input = document.createElement('input');
+    input.className = 'rle-input';
+    input.style.flex = '1';
+    input.placeholder = 'Type custom text (e.g., AAABBBCC)...';
+    input.value = rleInput;
+    input.id = 'rle-custom-input';
+    inputRow.appendChild(input);
+    const applyBtn = document.createElement('button');
+    applyBtn.className = 'btn btn-outline btn-sm';
+    applyBtn.innerText = 'Apply';
+    applyBtn.onclick = () => {
+        const v = document.getElementById('rle-custom-input').value.toUpperCase().replace(/[^A-Z]/g, '');
+        if (v.length > 0) { rleInput = v; stopAnimation(); resetStats(); renderRLE(); prepareGen(); }
+    };
+    inputRow.appendChild(applyBtn);
+    VA.appendChild(inputRow);
+
+    btnRandomize.style.display = '';
+}
+
+// ====================================================================
+// RENDERING: Memory
+// ====================================================================
+
+function initMemory() {
+    memBlocks = [];
+    memProcessCounter = 0;
+    let pos = 0;
+    while (pos < memTotal) {
+        if (Math.random() < 0.6 && memProcessCounter < 7) {
+            const sz = Math.min(Math.floor(Math.random() * 3) + 1, memTotal - pos);
+            memProcessCounter++;
+            const waste = Math.random() < 0.25 ? Math.ceil(Math.random() * sz * 0.3) : 0;
+            memBlocks.push({type:'allocated', process:'P'+memProcessCounter, size:sz, waste});
+            pos += sz;
+        } else {
+            const sz = Math.min(Math.floor(Math.random() * 2) + 1, memTotal - pos);
+            memBlocks.push({type:'free', process:null, size:sz, waste:0});
+            pos += sz;
+        }
+    }
+    renderMemory();
+    updateMemStats();
+    btnRandomize.style.display = '';
+}
+
+function renderMemory(animType = null, animIndex = -1, defrag = false) {
+    VA.innerHTML = '';
+    VA.style.display = 'flex'; VA.style.flexDirection = 'column';
+    VA.style.alignItems = 'stretch'; VA.style.justifyContent = 'center';
+    VA.style.gap = '16px'; VA.style.overflowY = 'auto';
+
+    // Title
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:10px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:1px;';
+    title.innerText = 'Memory Space (' + memTotal + ' segments)';
+    VA.appendChild(title);
+
+    // Memory bar
+    const bar = document.createElement('div');
+    bar.className = 'mem-bar';
+
+    memBlocks.forEach((b, i) => {
+        const seg = document.createElement('div');
+        seg.className = 'mem-seg';
+        seg.style.flex = b.size;
+        seg.id = 'mem-' + i;
+
+        if (b.type === 'allocated') {
+            if (b.waste > 0) {
+                seg.classList.add('int-frag');
+                seg.innerHTML = `<span>${b.process}</span><span class="seg-label">${b.size} units</span>`;
+            } else {
+                seg.classList.add('allocated');
+                seg.innerHTML = `<span>${b.process}</span><span class="seg-label">${b.size} units</span>`;
+            }
+        } else {
+            const hasBefore = memBlocks.slice(0, i).some(x => x.type === 'allocated');
+            const hasAfter = memBlocks.slice(i + 1).some(x => x.type === 'allocated');
+            if (hasBefore && hasAfter) {
+                seg.classList.add('free-frag');
+                seg.innerHTML = `<span>free</span><span class="seg-label">${b.size} units</span>`;
+            } else {
+                seg.classList.add('free');
+                seg.innerHTML = `<span>free</span><span class="seg-label">${b.size} units</span>`;
+            }
+        }
+
+        // Animations
+        if (animType === 'alloc' && i === animIndex) seg.classList.add('mem-alloc-anim');
+        if (animType === 'dealloc' && i === animIndex) seg.classList.add('mem-dealloc-anim');
+        if (defrag) {
+            seg.classList.add('mem-defrag-anim');
+            seg.style.animationDelay = (i * 0.08) + 's';
+        }
+
+        bar.appendChild(seg);
+    });
+    VA.appendChild(bar);
+
+    // Legend
+    const legend = document.createElement('div');
+    legend.style.cssText = 'display:flex; gap:12px; flex-wrap:wrap; font-size:10px;';
+    const items = [
+        {bg:'var(--primary)', label:'Allocated'},
+        {bg:'#1e293b', label:'Free'},
+        {bg:'repeating-linear-gradient(45deg,#1e293b,#1e293b 3px,#293548 3px,#293548 6px)', label:'Ext. Fragment', border:'1px dashed var(--accent)'},
+        {bg:'var(--primary)', label:'Int. Fragment', border:'1px dashed var(--accent)'},
+    ];
+    items.forEach(it => {
+        const d = document.createElement('div');
+        d.style.cssText = 'display:flex; align-items:center; gap:4px; color:var(--text-muted);';
+        const dot = document.createElement('div');
+        dot.style.cssText = `width:10px; height:10px; border-radius:2px; background:${it.bg}; flex-shrink:0;`;
+        if (it.border) dot.style.border = it.border;
+        d.appendChild(dot);
+        const txt = document.createElement('span');
+        txt.innerText = it.label;
+        d.appendChild(txt);
+        legend.appendChild(d);
+    });
+    VA.appendChild(legend);
+
+    // Buttons
+    const btns = document.createElement('div');
+    btns.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap;';
+
+    const allocBtn = document.createElement('button');
+    allocBtn.className = 'btn btn-primary btn-sm';
+    allocBtn.innerHTML = '+ Allocate';
+    allocBtn.onclick = () => { allocProcess(); };
+    btns.appendChild(allocBtn);
+
+    const deallocBtn = document.createElement('button');
+    deallocBtn.className = 'btn btn-danger btn-sm';
+    deallocBtn.innerHTML = '× Deallocate';
+    deallocBtn.onclick = () => { deallocRandom(); };
+    btns.appendChild(deallocBtn);
+
+    const defragBtn = document.createElement('button');
+    defragBtn.className = 'btn btn-accent btn-sm';
+    defragBtn.innerHTML = '⟳ Defragment';
+    defragBtn.onclick = () => { runDefrag(); };
+    btns.appendChild(defragBtn);
+
+    VA.appendChild(btns);
+}
+
+function updateMemStats() {
+    const totalFree = memBlocks.filter(b => b.type === 'free').reduce((s, b) => s + b.size, 0);
+    const totalWaste = memBlocks.filter(b => b.type === 'allocated').reduce((s, b) => s + b.waste, 0);
+    const freeCount = memBlocks.filter(b => b.type === 'free').length;
+    const frag = ((totalFree + totalWaste) / memTotal * 100).toFixed(1);
+    let largest = 0;
+    memBlocks.filter(b => b.type === 'free').forEach(b => { if (b.size > largest) largest = b.size; });
+
+    setStat(0, frag + '%');
+    setStat(1, freeCount);
+    setStat(2, largest);
+    setStat(3, memTotal + ' segs');
+}
+
+function allocProcess() {
+    const free = memBlocks.filter(b => b.type === 'free');
+    if (free.length === 0) return;
+    const block = free[0];
+    const idx = memBlocks.indexOf(block);
+    memProcessCounter++;
+    const pName = 'P' + memProcessCounter;
+    const sz = Math.min(Math.floor(Math.random() * 2) + 1, block.size);
+    const waste = Math.random() < 0.25 ? Math.ceil(Math.random() * sz * 0.3) : 0;
+
+    if (sz < block.size) {
+        memBlocks.splice(idx, 1,
+            {type:'allocated', process:pName, size:sz, waste},
+            {type:'free', process:null, size:block.size - sz, waste:0}
+        );
+        renderMemory('alloc', idx);
+    } else {
+        block.type = 'allocated'; block.process = pName; block.waste = waste;
+        renderMemory('alloc', idx);
+    }
+    updateMemStats();
+    setStep(`Allocated ${pName} (${sz} units) into free space`);
+}
+
+function deallocRandom() {
+    const alloc = memBlocks.filter(b => b.type === 'allocated');
+    if (alloc.length === 0) return;
+    const block = alloc[Math.floor(Math.random() * alloc.length)];
+    const idx = memBlocks.indexOf(block);
+    const name = block.process;
+    block.type = 'free'; block.waste = 0; block.process = null;
+    mergeFree();
+    renderMemory('dealloc', memBlocks.indexOf(block) !== -1 ? memBlocks.indexOf(block) : idx);
+    updateMemStats();
+    setStep(`Deallocated ${name} — gap created (external fragmentation)`);
+}
+
+function mergeFree() {
+    let i = 0;
+    while (i < memBlocks.length - 1) {
+        if (memBlocks[i].type === 'free' && memBlocks[i + 1].type === 'free') {
+            memBlocks[i].size += memBlocks[i + 1].size;
+            memBlocks.splice(i + 1, 1);
+        } else { i++; }
+    }
+}
+
+async function runDefrag() {
+    stopAnimation();
+    const allocd = memBlocks.filter(b => b.type === 'allocated');
+    const totalAlloc = allocd.reduce((s, b) => s + b.size, 0);
+    const totalFree = memTotal - totalAlloc;
+
+    memBlocks = [];
+    let pos = 0;
+    for (const a of allocd) {
+        memBlocks.push({...a, waste: 0, size: a.size});
+        pos += a.size;
+    }
+    if (totalFree > 0) {
+        memBlocks.push({type:'free', process:null, size:totalFree, waste:0});
+    }
+
+    renderMemory(null, -1, true);
+    updateMemStats();
+    setStep('Defragmentation complete — all free space merged into one contiguous block');
+}
+
+// ====================================================================
+// GENERATOR PREPARATION
+// ====================================================================
+
+function prepareGen() {
+    const gens = {
+        'bubble-sort': bubbleSortGen, 'insertion-sort': insertionSortGen,
+        'selection-sort': selectionSortGen, 'linear-search': linearSearchGen,
+        'binary-search': binarySearchGen, 'stack': stackGen,
+        'queue': queueGen, 'rle': rleGen, 'memory-fragmentation': memFragGen,
+    };
+    generator = (gens[currentTopic] || (() => {}))();
+}
+
+// ====================================================================
+// ALGORITHMS: Sorting
+// ====================================================================
+
+async function* bubbleSortGen() {
+    let arr = [...data], n = arr.length;
+    for (let i = 0; i < n; i++) {
+        let swapped = false;
+        for (let j = 0; j < n - i - 1; j++) {
+            stats[1]++; setStat(1, stats[1]);
+            const e1 = document.getElementById('bar-' + j);
+            const e2 = document.getElementById('bar-' + (j + 1));
+            e1.classList.add('comparing'); e2.classList.add('comparing');
+            setStep(`Comparing index ${j} (${arr[j]}) and ${j + 1} (${arr[j + 1]})`);
+            yield;
+
+            if (arr[j] > arr[j + 1]) {
+                stats[2]++; setStat(2, stats[2]);
+                e1.classList.add('swapping'); e2.classList.add('swapping');
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                e1.style.height = (arr[j] * 2.8) + 'px';
+                e2.style.height = (arr[j + 1] * 2.8) + 'px';
+                e1.querySelector('span').innerText = arr[j];
+                e2.querySelector('span').innerText = arr[j + 1];
+                setStep(`Swapping ${arr[j + 1]} and ${arr[j]} — out of order`);
+                swapped = true;
+                yield;
+            }
+            e1.classList.remove('comparing', 'swapping');
+            e2.classList.remove('comparing', 'swapping');
+        }
+        document.getElementById('bar-' + (n - i - 1)).classList.add('sorted');
+        if (!swapped) break;
+    }
+    setStep('Bubble Sort complete — array is sorted!');
+}
+
+async function* insertionSortGen() {
+    let arr = [...data], n = arr.length;
+    document.getElementById('bar-0').classList.add('sorted');
+    for (let i = 1; i < n; i++) {
+        let key = arr[i], j = i - 1;
+        const cur = document.getElementById('bar-' + i);
+        cur.classList.add('comparing');
+        setStep(`Picking element ${key} at index ${i} to insert`);
+        yield;
+
+        while (j >= 0 && arr[j] > key) {
+            stats[1]++; setStat(1, stats[1]);
+            const cb = document.getElementById('bar-' + j);
+            cb.classList.add('swapping');
+            arr[j + 1] = arr[j];
+            const nb = document.getElementById('bar-' + (j + 1));
+            nb.style.height = (arr[j] * 2.8) + 'px';
+            nb.querySelector('span').innerText = arr[j];
+            nb.classList.add('sorted');
+            setStep(`Shifting ${arr[j]} right — larger than ${key}`);
+            yield;
+            cb.classList.remove('swapping');
+            j--;
+        }
+        if (j >= 0) { stats[1]++; setStat(1, stats[1]); }
+        arr[j + 1] = key;
+        const tb = document.getElementById('bar-' + (j + 1));
+        tb.style.height = (key * 2.8) + 'px';
+        tb.querySelector('span').innerText = key;
+        tb.classList.add('sorted');
+        cur.classList.remove('comparing');
+        setStep(`Inserted ${key} at position ${j + 1}`);
+        yield;
+    }
+    setStep('Insertion Sort complete!');
+}
+
+async function* selectionSortGen() {
+    let arr = [...data], n = arr.length;
+    for (let i = 0; i < n; i++) {
+        let minIdx = i;
+        const iBar = document.getElementById('bar-' + i);
+        iBar.classList.add('comparing');
+        setStep(`Finding minimum in unsorted portion from index ${i}`);
+        for (let j = i + 1; j < n; j++) {
+            stats[1]++; setStat(1, stats[1]);
+            const jBar = document.getElementById('bar-' + j);
+            jBar.classList.add('comparing');
+            setStep(`Comparing ${arr[j]} at ${j} with current min ${arr[minIdx]}`);
+            yield;
+            if (arr[j] < arr[minIdx]) {
+                if (minIdx !== i) document.getElementById('bar-' + minIdx).classList.remove('swapping');
+                minIdx = j;
+                document.getElementById('bar-' + minIdx).classList.add('swapping');
+            }
+            jBar.classList.remove('comparing');
+        }
+        if (minIdx !== i) {
+            stats[2]++; setStat(2, stats[2]);
+            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+            const mBar = document.getElementById('bar-' + minIdx);
+            iBar.style.height = (arr[i] * 2.8) + 'px';
+            mBar.style.height = (arr[minIdx] * 2.8) + 'px';
+            iBar.querySelector('span').innerText = arr[i];
+            mBar.querySelector('span').innerText = arr[minIdx];
+            mBar.classList.remove('swapping');
+            setStep(`Swapping ${arr[i]} into position ${i}`);
+            yield;
+        }
+        iBar.classList.remove('comparing');
+        iBar.classList.add('sorted');
+    }
+    setStep('Selection Sort complete!');
+}
+
+// ====================================================================
+// ALGORITHMS: Searching
+// ====================================================================
+
+async function* linearSearchGen() {
+    const t = currentTopicTarget;
+    for (let i = 0; i < data.length; i++) {
+        stats[1]++; setStat(1, stats[1]);
+        const box = document.getElementById('box-' + i);
+        box.style.borderColor = 'var(--accent)';
+        box.style.background = 'rgba(245,158,11,0.15)';
+        box.style.transform = 'scale(1.08)';
+        setStep(`Checking index ${i}: ${data[i]} ${data[i] === t ? '= ' + t + ' ✓ FOUND!' : '≠ ' + t}`);
+        yield;
+        if (data[i] === t) {
+            box.style.background = 'var(--secondary)';
+            box.style.borderColor = '#fff';
+            setStep(`Found ${t} at index ${i}!`);
+            return;
+        }
+        box.style.opacity = '0.3'; box.style.transform = 'scale(1)';
+    }
+    setStep(`Target ${t} not found.`);
+}
+
+async function* binarySearchGen() {
+    const t = currentTopicTarget;
+    let lo = 0, hi = data.length - 1;
+    while (lo <= hi) {
+        stats[1]++; setStat(1, stats[1]);
+        const mid = Math.floor((lo + hi) / 2);
+        // Dim out-of-range
+        for (let i = 0; i < data.length; i++) {
+            const b = document.getElementById('box-' + i);
+            b.style.opacity = (i < lo || i > hi) ? '0.15' : '1';
+        }
+        const box = document.getElementById('box-' + mid);
+        box.style.borderColor = 'var(--accent)';
+        box.style.transform = 'scale(1.12)';
+        box.style.background = 'rgba(245,158,11,0.2)';
+        setStep(`Checking mid index ${mid}: ${data[mid]} | Range [${lo}..${hi}]`);
+        yield;
+
+        if (data[mid] === t) {
+            box.style.background = 'var(--secondary)';
+            box.style.borderColor = '#fff';
+            setStep(`Found ${t} at index ${mid}!`);
+            return;
+        }
+        if (data[mid] < t) {
+            lo = mid + 1;
+            setStep(`${data[mid]} < ${t} → search right half`);
+        } else {
+            hi = mid - 1;
+            setStep(`${data[mid]} > ${t} → search left half`);
+        }
+        box.style.transform = 'scale(1)';
+        box.style.borderColor = 'var(--border)';
+        box.style.background = '';
+        yield;
+    }
+    setStep(`Target ${t} not found.`);
+}
+
+// ====================================================================
+// ALGORITHMS: Stack (with animated DOM)
+// ====================================================================
+
+async function* stackGen() {
+    const ops = ['PUSH 42', 'PUSH 17', 'PUSH 89', 'POP', 'PUSH 55', 'POP', 'PUSH 31', 'PUSH 73', 'POP'];
+    for (const op of ops) {
+        if (op.startsWith('PUSH')) {
+            const val = parseInt(op.split(' ')[1]);
+            data.push(val);
+
+            // Create element with push animation
+            const el = document.createElement('div');
+            el.className = 'stack-item stack-push-anim';
+            el.innerText = val;
+            stackContainer.appendChild(el);
+            updateStackLabels();
+            setStat(1, data.length);
+            setStat(2, val);
+            setStep(`PUSH ${val} → added to top of stack`);
+            yield;
+            el.classList.remove('stack-push-anim');
+        } else {
+            if (data.length === 0) continue;
+            const val = data[data.length - 1];
+            const items = stackContainer.querySelectorAll('.stack-item');
+            const topEl = items[items.length - 1];
+            if (!topEl) continue;
+
+            // Highlight phase
+            topEl.classList.add('stack-pop-highlight');
+            setStep(`POP: Highlighting top element ${val}`);
+            yield;
+
+            // Slide-out phase
+            topEl.classList.remove('stack-pop-highlight');
+            topEl.classList.add('stack-pop-slide');
+            setStep(`POP: Removing ${val} from top`);
+            yield;
+
+            topEl.remove();
+            data.pop();
+            updateStackLabels();
+            setStat(1, data.length);
+            setStat(2, data.length > 0 ? data[data.length - 1] : '—');
+            setStep(`POP complete → removed ${val}. New top: ${data.length > 0 ? data[data.length - 1] : 'empty'}`);
+        }
+    }
+    setStep('Stack operations complete!');
+}
+
+// ====================================================================
+// ALGORITHMS: Queue (with animated DOM)
+// ====================================================================
+
+async function* queueGen() {
+    const ops = ['ENQUEUE 42', 'ENQUEUE 17', 'ENQUEUE 89', 'DEQUEUE', 'ENQUEUE 55', 'DEQUEUE', 'ENQUEUE 31', 'ENQUEUE 73', 'DEQUEUE'];
+    for (const op of ops) {
+        if (op.startsWith('ENQUEUE')) {
+            const val = parseInt(op.split(' ')[1]);
+            data.push(val);
+
+            const el = document.createElement('div');
+            el.className = 'queue-item queue-enq-anim';
+            el.innerText = val;
+            queueContainer.appendChild(el);
+            updateQueueLabels();
+            setStat(1, data.length);
+            setStat(2, data[0]);
+            setStep(`ENQUEUE ${val} → joined rear of queue`);
+            yield;
+            el.classList.remove('queue-enq-anim');
+        } else {
+            if (data.length === 0) continue;
+            const val = data[0];
+            const frontEl = queueContainer.querySelector('.queue-item');
+
+            // Highlight
+            frontEl.classList.add('queue-deq-highlight');
+            setStep(`DEQUEUE: Highlighting front element ${val}`);
+            yield;
+
+            // Slide out
+            frontEl.classList.remove('queue-deq-highlight');
+            frontEl.classList.add('queue-deq-slide');
+            setStep(`DEQUEUE: Removing ${val} from front`);
+            yield;
+
+            frontEl.remove();
+            data.shift();
+
+            // Shift remaining items smoothly
+            const remaining = queueContainer.querySelectorAll('.queue-item');
+            remaining.forEach(el => {
+                el.classList.add('queue-shift-anim');
+                setTimeout(() => el.classList.remove('queue-shift-anim'), 400);
+            });
+
+            updateQueueLabels();
+            setStat(1, data.length);
+            setStat(2, data.length > 0 ? data[0] : '—');
+            setStep(`DEQUEUE complete → removed ${val}. New front: ${data.length > 0 ? data[0] : 'empty'}`);
+            yield;
+        }
+    }
+    setStep('Queue operations complete!');
+}
+
+// ====================================================================
+// ALGORITHMS: RLE
+// ====================================================================
+
+async function* rleGen() {
+    const input = rleInput;
+    let result = '';
+    let groups = [];
+    let i = 0;
+
+    // Parse all groups first
+    while (i < input.length) {
+        let count = 1;
+        while (i + count < input.length && input[i] === input[i + count]) count++;
+        groups.push({char: input[i], count});
+        i += count;
+    }
+
+    // Animate group by group
+    for (let gi = 0; gi < groups.length; gi++) {
+        const g = groups[gi];
+        renderRLE(groups, gi, result || null);
+        setStep(`Scanning: found ${g.count} × '${g.char}'`);
+        yield;
+
+        const encoded = `${g.count}${g.char}`;
+        result += encoded;
+        renderRLE(groups, gi, result);
+
+        stats[0]++; setStat(0, stats[0]);
+        const pct = ((1 - result.length / input.length) * 100).toFixed(1);
+        setStat(1, pct + '%');
+        setStat(2, input.length + ' chars');
+        setStat(3, result.length + ' chars');
+        setStep(`Encoded: ${g.count}${g.char} → running result: "${result}"`);
+        yield;
+    }
+
+    renderRLE(groups, -1, result);
+    const finalPct = ((1 - result.length / input.length) * 100).toFixed(1);
+    setStep(`RLE complete! "${input}" → "${result}" (${finalPct}% ${parseFloat(finalPct) > 0 ? 'saved' : 'larger'})`);
+}
+
+// ====================================================================
+// ALGORITHMS: Memory Fragmentation
+// ====================================================================
+
+async function* memFragGen() {
+    const ops = ['alloc', 'alloc', 'alloc', 'dealloc', 'alloc', 'dealloc', 'alloc', 'dealloc', 'alloc'];
+    for (const op of ops) {
+        if (op === 'alloc') {
+            allocProcess();
+        } else {
+            const allocd = memBlocks.filter(b => b.type === 'allocated');
+            if (allocd.length > 0) deallocRandom();
+        }
+        yield;
+    }
+    setStep('Auto-simulation complete. Try "Defragment" to compact memory.');
+}
+
+// ====================================================================
+// PLAYBACK CONTROLS
+// ====================================================================
+
+async function togglePlay() {
+    if (isRunning) {
+        stopAnimation();
+    } else {
+        isRunning = true;
+        btnPlay.innerHTML = `<svg style="width:14px;height:14px;" fill="currentColor" viewBox="0 0 20 20"><path d="M4.5 3.5h3v13h-3v-13zm8 0h3v13h-3v-13z"></path></svg> Pause`;
+        runAnim();
+    }
+}
+
+async function runAnim() {
+    if (!isRunning || !generator) return;
+    const r = await generator.next();
+    if (r.done) { stopAnimation(); return; }
+    stats[0]++; setStat(0, stats[0]);
+    const delay = Math.max(10, 1000 - (speedRange.value * 9.8));
+    setTimeout(() => { if (isRunning) requestAnimationFrame(runAnim); }, delay);
+}
+
+function stopAnimation() {
+    isRunning = false;
+    btnPlay.innerHTML = `<svg style="width:14px;height:14px;" fill="currentColor" viewBox="0 0 20 20"><path d="M4.5 3.5l11 6.5-11 6.5z"></path></svg> Play`;
+}
+
+async function stepForward() {
+    stopAnimation();
+    if (!generator) return;
+    const r = await generator.next();
+    if (!r.done) { stats[0]++; setStat(0, stats[0]); }
+}
+
+function resetVisualizer() {
+    stopAnimation(); resetStats();
+    initVisuals(currentTopic);
+}
+
+speedRange.addEventListener('input', e => { speed = e.target.value; });
+
+// ====================================================================
+// INIT
+// ====================================================================
+window.onload = () => loadTopic('bubble-sort');
+</script>
+</body>
+</html>
